@@ -1,17 +1,17 @@
 // app.js — PM2.5 Explorer orchestrator (city-aware: Kandy default, Medellín
 // proving ground). All per-city behaviour comes from cities.js.
 
-import { $, el, fmt, fmtCI, clamp } from './util.js?v=1783879241';
-import { activeCity } from './cities.js?v=1783879241';
-import { Store } from './store.js?v=1783879241';
-import { colourMode, paintField, paintColourbar } from './field.js?v=1783879241';
-import { WindLayer } from './wind.js?v=1783879241';
-import { Timeline } from './timeline.js?v=1783879241';
-import { Overlay } from './overlay.js?v=1783879241';
-import { initPanels, updatePanels, pointQuery, clearPin } from './panels.js?v=1783879241';
-import { initShowcase } from './showcase.js?v=1783879241';
-import { MapView } from './mapview.js?v=1783879241';
-import { downloadPNG, downloadFieldCSV, downloadPointCSV } from './download.js?v=1783879241';
+import { $, el, fmt, fmtCI, clamp } from './util.js?v=1784328061';
+import { activeCity } from './cities.js?v=1784328061';
+import { Store } from './store.js?v=1784328061';
+import { colourMode, paintField, paintColourbar } from './field.js?v=1784328061';
+import { WindLayer } from './wind.js?v=1784328061';
+import { Timeline } from './timeline.js?v=1784328061';
+import { Overlay } from './overlay.js?v=1784328061';
+import { initPanels, updatePanels, pointQuery, clearPin } from './panels.js?v=1784328061';
+import { initShowcase } from './showcase.js?v=1784328061';
+import { MapView } from './mapview.js?v=1784328061';
+import { downloadPNG, downloadFieldCSV, downloadPointCSV } from './download.js?v=1784328061';
 
 const MAP = 840;                    // internal map canvas resolution (square)
 const CITY = activeCity();

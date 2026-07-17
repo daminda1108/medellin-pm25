@@ -33,7 +33,7 @@ export const CITIES = {
     docTitle: 'Medellín PM2.5 · proving ground · 2019–2023',
     subtitle: 'The Kandy method run blind against a city that has monitors: '
       + 'fields built from 0–2 sensors, then scored against the withheld network',
-    yearsLabel: '2019 – 2023',
+    yearsLabel: '2018 – 2024',
     tzOffsetH: -5,
     tzHint: 'Colombia time · hourly grid at :00',
     minuteLabel: '00',
@@ -43,9 +43,10 @@ export const CITIES = {
     // displayed t2m is lapse-adjusted from the basin-area mean to the valley floor
     // (validated vs SKMD airport: r 0.88, residual -1.5 C) — label it as such
     t2mLabel: 'Temperature (valley floor)',
-    windCaveat: 'Wind animation shows the model’s diagnostic terrain flow; hourly '
-      + 'agreement with valley-floor airport winds is weak (r≈0.2) — read it as '
-      + 'illustrative. The PM2.5 field itself does not depend on it.',
+    windCaveat: 'Wind: ERA5 plus a thermal valley-circulation model calibrated '
+      + 'against five years of Olaya Herrera airport observations (hourly speed '
+      + 'r 0.60, direction 49% within ±45°, 2023 holdout). Away from the airport '
+      + 'the flow is model structure. The PM2.5 field itself does not depend on it.',
     obsLabel: null,
     defaultTs: '2019-03-12 08:00',
     downloadPrefix: 'medellin_pm25',
