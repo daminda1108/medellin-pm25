@@ -46,7 +46,11 @@ export const CITIES = {
     windCaveat: 'Wind: ERA5 plus a thermal valley-circulation model calibrated '
       + 'against five years of Olaya Herrera airport observations (hourly speed '
       + 'r 0.60, direction 49% within ±45°, 2023 holdout). Away from the airport '
-      + 'the flow is model structure. The PM2.5 field itself does not depend on it.',
+      + 'the flow is model structure. Humidity is shown for the valley floor '
+      + '(validated vs the airport: hourly r 0.78, diurnal r 0.94). Rain is ERA5 '
+      + 'reanalysis, consistent with local climatology — Colombian airport reports '
+      + 'carry no gauge amounts to check it against. The PM2.5 field itself does '
+      + 'not depend on any of these.',
     obsLabel: null,
     defaultTs: '2019-03-12 08:00',
     downloadPrefix: 'medellin_pm25',
