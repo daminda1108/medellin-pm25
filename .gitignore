@@ -1,2 +1,3 @@
 live/model/*.tmp
 __pycache__/
+.pushlog
