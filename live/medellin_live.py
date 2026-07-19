@@ -213,6 +213,29 @@ def score(state):
     state["summary"] = {"n_hours": int(len(df)), "n_days": len(daily),
                         "rmse_f": round(r_f, 2), "rmse_p": round(r_p, 2),
                         "skill_vs_persistence": round(1 - r_f / r_p, 2) if r_p > 0 else None}
+    # per-lead skill (F-MQO): score EVERY issuance's hours by lead bucket, not just
+    # the day-ahead composite. Persistence baseline = obs 24 h before the valid hour.
+    lead_rows = []
+    for iss in state["issuances"]:
+        t0 = iss["hours"][0]
+        for h, f in zip(iss["hours"], iss["fcst"]):
+            o = obs.get(h); p = obs.get(h - 86400)
+            if o is None or p is None:
+                continue
+            lead_rows.append(((h - t0) / 3600.0, f, o, p))
+    if lead_rows:
+        ld = pd.DataFrame(lead_rows, columns=["lead", "f", "o", "p"])
+        buckets = [(0, 24), (24, 48), (48, 72), (72, 96), (96, 121)]
+        per_lead = []
+        for lo, hi in buckets:
+            g = ld[(ld.lead >= lo) & (ld.lead < hi)]
+            if len(g) < 24:
+                continue
+            rf, rp = rmse(g.f, g.o), rmse(g.p, g.o)
+            per_lead.append({"lead": f"{lo}-{hi - 1}h", "n": int(len(g)),
+                             "rmse_f": round(rf, 2), "rmse_p": round(rp, 2),
+                             "skill": round(1 - rf / rp, 2) if rp > 0 else None})
+        state["per_lead"] = per_lead
     log(f"SCORE: {len(df)} matured hours / {len(daily)} days, "
         f"RMSE fcst {r_f:.2f} vs persistence {r_p:.2f}")
 
