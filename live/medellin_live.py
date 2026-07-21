@@ -79,7 +79,7 @@ def snapshot_obs(pack, state):
     doc = r.json()
     if doc.get("status") != "ok":
         raise RuntimeError(f"WAQI bounds: {doc}")
-    vals = []
+    vals, ages = [], []
     for st in doc.get("data", []):
         la, lo = float(st["lat"]), float(st["lon"])
         if not any(abs(p["lat"] - la) < MATCH_DEG and abs(p["lon"] - lo) < MATCH_DEG
@@ -96,20 +96,37 @@ def snapshot_obs(pack, state):
         if pm is None or ts is None:
             continue
         age_h = (dt.datetime.now(dt.timezone.utc).timestamp() - ts) / 3600
-        if age_h > 3:                          # stale station
+        ages.append(round(age_h, 1))
+        # Staleness window 12 h (was 3 h — WAQI's SIATA mirror drifted to a ~6 h
+        # upload delay in mid-Jul 2026, which silently zeroed the obs log for a
+        # week; found 2026-07-21). A delayed report is harmless: each value is
+        # keyed to its OWN measurement hour `ts`, not the fetch hour, so scoring
+        # stays correct — the window only guards against a frozen station.
+        if age_h > 12:
             continue
         ug = aqi_to_ugm3(float(pm))
         if ug is not None and 0 < ug < 800:
             vals.append((int(ts // 3600 * 3600), ug))
     if len(vals) < MIN_STATIONS:
-        log(f"OBS: only {len(vals)} fresh matched stations — snapshot skipped")
+        log(f"OBS: only {len(vals)} fresh matched stations — snapshot skipped "
+            f"(station ages_h={sorted(ages)})")
         return False
-    # one network-mean sample at the (mode) station hour
-    hours = pd.Series([v[0] for v in vals])
-    h = int(hours.mode().iloc[0])
-    mean = float(np.mean([v for t, v in vals if t == h]))
+    # network-mean sample for EVERY station hour with enough reporters (delayed
+    # uploads spread one fetch across several measurement hours — log them all)
     obs = dict(zip(state["obs"]["hours"], state["obs"]["values"]))
-    obs[h] = round(mean, 2)
+    byh = {}
+    for t, v in vals:
+        byh.setdefault(t, []).append(v)
+    logged = []
+    for h, vv in sorted(byh.items()):
+        if len(vv) >= MIN_STATIONS:
+            obs[h] = round(float(np.mean(vv)), 2)
+            logged.append((h, len(vv), obs[h]))
+    if not logged:
+        log(f"OBS: no hour reached {MIN_STATIONS} stations "
+            f"(hours seen: { {k: len(v) for k, v in byh.items()} })")
+        return False
+    h, mean = logged[-1][0], logged[-1][2]
     cut = dt.datetime.now(dt.timezone.utc).timestamp() - OBS_WINDOW_D * 86400
     keep = sorted(k for k in obs if k >= cut)
     state["obs"] = {"hours": keep, "values": [obs[k] for k in keep],
