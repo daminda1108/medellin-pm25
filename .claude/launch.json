@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "medellin-webapp",
+      "runtimeExecutable": "D:/ProjectCD/kandy_pm25/.venv/Scripts/python.exe",
+      "runtimeArgs": ["-m", "http.server", "8792"],
+      "port": 8792
+    }
+  ]
+}

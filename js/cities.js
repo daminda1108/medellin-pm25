@@ -30,7 +30,7 @@ export const CITIES = {
     base: 'data',                  // standalone app: payload at repo root
     name: 'Medellín',
     title: 'Medellín PM<sub>2.5</sub> · proving ground',
-    docTitle: 'Medellín PM2.5 · proving ground · 2019–2023',
+    docTitle: 'Medellín PM2.5 · proving ground · 2018–2024',
     subtitle: 'The Kandy method run blind against a city that has monitors: '
       + 'fields built from 0–2 sensors, then scored against the withheld network',
     yearsLabel: '2018 – 2024',
@@ -39,7 +39,9 @@ export const CITIES = {
     minuteLabel: '00',
     core: { lat: 6.24434, lon: -75.57355 },
     seasonCode: false,           // equatorial: monsoon-season codes are meaningless
-    features: { fect: false, health: false, showcase: true, weatherFull: false },
+    // fect:true here means "there is a ground-truth overlay for the diurnal chart" —
+    // that file carries the SIATA network mean (display only, never assimilated)
+    features: { fect: true, health: false, showcase: true, weatherFull: false },
     // displayed t2m is lapse-adjusted from the basin-area mean to the valley floor
     // (validated vs SKMD airport: r 0.88, residual -1.5 C) — label it as such
     t2mLabel: 'Temperature (valley floor)',
@@ -47,11 +49,16 @@ export const CITIES = {
       + 'against five years of Olaya Herrera airport observations (hourly speed '
       + 'r 0.60, direction 49% within ±45°, 2023 holdout). Away from the airport '
       + 'the flow is model structure. Humidity is shown for the valley floor '
-      + '(validated vs the airport: hourly r 0.78, diurnal r 0.94). Rain is ERA5 '
-      + 'reanalysis, consistent with local climatology — Colombian airport reports '
-      + 'carry no gauge amounts to check it against. The PM2.5 field itself does '
-      + 'not depend on any of these.',
-    obsLabel: null,
+      + '(validated vs the airport: hourly r 0.78, diurnal r 0.94). The PM2.5 field '
+      + 'itself does not depend on any of these.',
+    // Rain source changed 2026-07-21: the old copy called ERA5 "consistent with local
+    // climatology", which the arbitration disproved (ERA5-Land runs ~1.8x IMERG on the
+    // same box). Now GPM IMERG, shipped as a basin average.
+    rainLabel: 'Rain (basin average, this hour)',
+    rainCaveat: 'Rainfall is a satellite estimate (GPM IMERG) averaged over the whole '
+      + 'basin including the wet upper slopes, so it reads higher than a valley-floor '
+      + 'gauge such as Olaya Herrera — the floor is drier than the number shown.',
+    obsLabel: 'SIATA network mean',
     defaultTs: '2019-03-12 08:00',
     downloadPrefix: 'medellin_pm25',
     captionName: 'Medellín PM2.5 (proving ground)',
