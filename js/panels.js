@@ -3,7 +3,7 @@
 // decomposition split, exposure/health, click-a-pixel point query.
 // Every numeric estimate carries its interval.
 
-import { $, el, fmt, fmtCI, clamp, fitCanvas, smoothPath, compass } from './util.js?v=1784614167';
+import { $, el, fmt, fmtCI, clamp, fitCanvas, smoothPath, compass } from './util.js?v=1784850391';
 
 let store, seekCb, curField, city;
 let LT = 5.5 * 3600;
@@ -18,12 +18,44 @@ function panelW(cv) {
 
 export function updatePanels(f) {
   curField = f;
+  drawConditions(f);
   drawDiurnal(f);
   drawSeason(f);
   drawWeather(f);
   drawDecomp(f);
   drawHealth(f.year);
   if (pinned) pointQuery(pinned.lat, pinned.lon, true);
+}
+
+// ── conditions chip: one-line causal state for the selected hour ─────────────
+// Thresholds documented on the method page. The rain-washed state is backed by
+// the measured Medellín ground-truth response (rain onset → −3.4 µg/m³ within
+// 3 h, 77% of 204 events vs SIATA network; 2026-07-21 analysis).
+function classifyConditions(f) {
+  const inc = f.T - f.B;                       // local accumulation amplitude
+  const bShare = f.T > 0 ? f.B / f.T : 0;
+  const rainy = Number.isFinite(f.rain) && f.rain > 0.3;
+  const calmShallow = f.wspd < 1.0 && f.blh < 400;
+  const lh = Math.floor(((f.tsUTC + LT) % 86400) / 3600);
+  const rush = (lh >= 6 && lh <= 9) || (lh >= 17 && lh <= 20);
+  if (rainy) return ['rain', 'Rain-washed', 'rain is scavenging particles — levels fall within hours'];
+  if (inc <= 0.5 && (f.wspd >= 1.0 || f.blh >= 700))
+    return ['vent', 'Well-ventilated', 'deep mixing dilutes local emissions across the basin'];
+  if (calmShallow && inc > 0.5)
+    return ['stag', 'Stagnant — accumulating', 'calm air under a shallow boundary layer traps emissions'];
+  if (bShare > 0.75 && f.T > 15)
+    return ['reg', 'Regional transport', 'most of this hour arrives with the regional background'];
+  if (rush && inc > 0.5)
+    return ['rush', 'Rush-hour build-up', 'traffic emissions accumulating above the background'];
+  return ['mild', 'Mixed conditions', 'no single process dominates this hour'];
+}
+
+function drawConditions(f) {
+  const elc = $('#cond-chip');
+  if (!elc) return;
+  const [cls, label, why] = classifyConditions(f);
+  elc.className = `cond-chip cond-${cls}`;
+  elc.innerHTML = `<span class="cond-dot"></span><b>${label}</b><span class="cond-why">${why}</span>`;
 }
 
 // ── diurnal cycle: 90% band + smooth median + FECT obs + hour marker ─────────
@@ -33,6 +65,7 @@ async function drawDiurnal(f) {
   const daySec = Math.floor((f.tsUTC + LT) / 86400) * 86400 - LT;
   const hfrac = city.minuteLabel === '30' ? 0.5 : 0.0;   // native LT sub-hour grid
   const pts = [];                                  // [hour, T, T05, T95]
+  const rain = [];                                 // [hour, mm] for the washout bars
   const dayGis = [];                               // gi for each hour of the day
   for (let i = 0; i < s.hours_utc.length; i++) {
     const lt = s.hours_utc[i] + LT;
@@ -40,6 +73,9 @@ async function drawDiurnal(f) {
       const h = new Date(lt * 1000).getUTCHours() + hfrac;
       if (blind) pts.push([h, Math.max(s.Tv[i], 0), Math.max(s.Tv05[i], 0), Math.max(s.Tv95[i], 0)]);
       else pts.push([h, s.basin[i], s.T05[i], s.T95[i]]);
+      // hourly rain (mm) for the washout bars — the removal process made visible, so a
+      // clean day explains itself. Absent rain (IMERG gap) ships null and is skipped.
+      if (s.rain && s.rain[i] != null && s.rain[i] > 0.04) rain.push([h, s.rain[i]]);
       dayGis.push([h, i]);
     }
   }
@@ -63,16 +99,20 @@ async function drawDiurnal(f) {
     }
   }
   const markHour = new Date((f.tsUTC + LT) * 1000).getUTCHours() + hfrac;
-  diurnalChart($('#diurnal-canvas'), pts, obs, markHour, pixLine);
+  diurnalChart($('#diurnal-canvas'), pts, obs, markHour, pixLine, rain);
   const loc = pinnedPx != null
     ? ` · <span class="dot dot-loc"></span> clicked location` : '';
+  const rainLeg = rain.length
+    ? ` · <span class="dot dot-rain"></span> rain (${rain.reduce((a, r) => a + r[1], 0).toFixed(1)} mm)`
+    : '';
   $('#diurnal-note').innerHTML = (obs.length
     ? `<span class="dot dot-line"></span> basin mean · <span class="dot dot-band"></span> 90% band · `
       + `<span class="dot dot-obs"></span> ${city.obsLabel} (${obs.length} h)`
-    : `<span class="dot dot-line"></span> basin mean · <span class="dot dot-band"></span> 90% band`) + loc;
+    : `<span class="dot dot-line"></span> basin mean · <span class="dot dot-band"></span> 90% band`)
+    + rainLeg + loc;
 }
 
-function diurnalChart(canvas, pts, obs, markHour, pixLine) {
+function diurnalChart(canvas, pts, obs, markHour, pixLine, rain = []) {
   const { ctx, w: W, h: H } = fitCanvas(canvas, panelW(canvas), 168);
   ctx.clearRect(0, 0, W, H);
   if (!pts.length) return;
@@ -96,6 +136,23 @@ function diurnalChart(canvas, pts, obs, markHour, pixLine) {
   for (const h of [0, 6, 12, 18, 24]) {
     ctx.fillStyle = 'rgba(210,220,235,0.55)';
     ctx.fillText(String(h).padStart(2, '0'), X(h), H - 6);
+  }
+
+  // rain bars, drawn from the baseline upward BEHIND the PM curve. Scaled against a
+  // 10 mm/h reference and capped at a third of the plot so heavy rain never hides the
+  // pollution trace; this is the removal process the user asked to see, and it makes
+  // "why was today clean" answerable at a glance.
+  if (rain.length) {
+    const bw = Math.max(3, (W - pad.l - pad.r) / 26);
+    for (const [h, mm] of rain) {
+      const frac = Math.min(1, mm / 10);
+      const bh = frac * (H - pad.t - pad.b) * 0.34;
+      const grd = ctx.createLinearGradient(0, H - pad.b - bh, 0, H - pad.b);
+      grd.addColorStop(0, 'rgba(74,163,255,0.42)');
+      grd.addColorStop(1, 'rgba(74,163,255,0.10)');
+      ctx.fillStyle = grd;
+      ctx.fillRect(X(h) - bw / 2, H - pad.b - bh, bw, bh);
+    }
   }
 
   // 90% band (T05..T95)
