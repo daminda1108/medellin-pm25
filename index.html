@@ -7,13 +7,19 @@
   <meta name="description" content="Hourly PM2.5 maps for the Aburrá Valley rebuilt from satellite + physics with almost no ground data, a self-checking day-ahead forecast, and the measured value of the monitoring network." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=STIX+Two+Text:wght@500;600&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="css/style.css?v=1784851526" />
+  <link rel="stylesheet" href="css/style.css?v=1784868276" />
 </head>
 <body>
   <div id="loading">
     <div class="load-inner">
       <div class="spinner"></div>
       <span>Loading Medellín PM<sub>2.5</sub> fields…</span>
+      <div class="load-steps" id="load-steps">
+        <span class="load-step" data-step="terrain">terrain &amp; map layers</span>
+        <span class="load-step" data-step="wind">terrain-wind library</span>
+        <span class="load-step" data-step="years">hourly record</span>
+        <span class="load-step" data-step="field">reconstructing the field</span>
+      </div>
     </div>
   </div>
 
@@ -32,6 +38,12 @@
       <a href="https://daminda1108.github.io/kandy-pm25-explorer/method.html" class="method-link">How it works</a>
     </div>
   </header>
+
+  <nav class="surface-nav" role="tablist" aria-label="Views">
+    <button class="surf-btn active" data-surface="explore" role="tab" aria-selected="true">Explore</button>
+    <button class="surf-btn" data-surface="insights" role="tab" aria-selected="false">Insights</button>
+    <span class="surf-hint" id="surf-hint">the map, hour by hour</span>
+  </nav>
 
   <div class="datetime-bar">
     <span class="dt-label">Date &amp; time</span>
@@ -127,7 +139,7 @@
     </section>
 
     <aside class="rail">
-      <div class="panel panel-showcase">
+      <div class="panel panel-showcase" data-surface="both">
         <h3>Forecast vs reality <span class="hint">it checks itself</span></h3>
         <div id="live-wrap" style="display:none">
           <h4 class="sub-h">Live · issued daily, scored as measurements land</h4>
@@ -139,7 +151,7 @@
         <p id="forecast-note" class="note"></p>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-surface="both">
         <h3>Today's pattern <span class="hint">selected day</span></h3>
         <canvas id="diurnal-canvas"></canvas>
         <p id="diurnal-note" class="note"></p>
@@ -147,18 +159,18 @@
         <canvas id="season-canvas"></canvas>
       </div>
 
-      <div class="panel">
+      <div class="panel" data-surface="explore">
         <h3>Weather <span class="hint">this hour</span></h3>
         <div id="weather-body" class="kv"></div>
         <p id="weather-note" class="note"></p>
       </div>
 
-      <div class="panel" id="point-panel">
+      <div class="panel" id="point-panel" data-surface="explore">
         <h3>Any location <span class="hint">click the map</span></h3>
         <div id="point-body" class="kv"></div>
       </div>
 
-      <details class="panel tech-details panel-showcase">
+      <details class="panel tech-details panel-showcase" data-surface="explore">
         <summary>How good is the model? <span class="hint">scored against the real network</span></summary>
         <p class="note">The dots on the map (toggle above the download row) are Medellín's
           real monitors, coloured by what they measured over 2019–2023. The model never saw
@@ -167,7 +179,7 @@
         <div id="station-detail" class="kv"></div>
       </details>
 
-      <details class="panel tech-details panel-showcase">
+      <details class="panel tech-details panel-showcase" data-surface="explore">
         <summary>What monitors are worth <span class="hint">interactive</span></summary>
         <p class="note">Drag from zero (what an unmonitored city gets) to the full network
           and watch the map and the error change. One badly-placed sensor is worse than
@@ -182,7 +194,7 @@
         <canvas id="dv-curve"></canvas>
       </details>
 
-      <details class="panel tech-details">
+      <details class="panel tech-details" data-surface="both">
         <summary>Where the pollution comes from <span class="hint">background vs local</span></summary>
         <canvas id="decomp-canvas"></canvas>
         <p id="decomp-note" class="note"></p>
@@ -207,6 +219,6 @@
         d.addEventListener('toggle', () => window.dispatchEvent(new Event('resize'))));
     });
   </script>
-  <script type="module" src="js/app.js?v=1784851526"></script>
+  <script type="module" src="js/app.js?v=1784868276"></script>
 </body>
 </html>
