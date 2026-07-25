@@ -7,8 +7,8 @@
 //      between assimilation tiers and moves a live point on the data-value curve.
 // All numbers come from the exported payloads (stations/showcase/forecast/datavalue).
 
-import { $, el, fmt, fitCanvas, ylorrd, clamp } from './util.js?v=1784975366';
-import { colourMode, paintField, paintColourbar } from './field.js?v=1784975366';
+import { $, el, fmt, fitCanvas, ylorrd, clamp } from './util.js?v=1784984423';
+import { colourMode, paintField, paintColourbar } from './field.js?v=1784984423';
 
 export async function initShowcase({ store, city, mapview, stationCanvas, getState, exitToHour }) {
   const [stations, showcase, forecast, dv] = await Promise.all([
@@ -122,10 +122,10 @@ export async function initShowcase({ store, city, mapview, stationCanvas, getSta
       <table class="sc-table">
         <thead><tr><th>tier</th><th>seasonal r</th><th>diurnal r</th>
         <th>spatial ρ</th><th>level</th><th>RMSE</th></tr></thead>
-        <tbody>${row(a0, '0 sensors (satellite)')}${row(a1, '2 sensors (Kandy-grade)')}</tbody>
+        <tbody>${row(a0, 'satellite level (shape still 2-sensor)')}${row(a1, '2 sensors (Kandy-grade)')}</tbody>
       </table>
       <p class="note">Scored against ${stations.stations.filter((s) => s.role !== 'anchor').length}+
-      withheld stations, 2019–2023. The zero-ground-data tier statistically ties the
+      withheld stations, 2019–2023. The spatial rank is genuinely sensor-free (the pattern never sees a sensor), and on that axis the satellite-level tier statistically ties the
       2-sensor tier — the level comes from the satellite anchor, the pattern from physics.</p>`;
   }
 
@@ -181,7 +181,7 @@ export async function initShowcase({ store, city, mapview, stationCanvas, getSta
 
   // ── data-value slider (the centrepiece) ─────────────────────────────────────
   const DV_LABELS = {
-    0: 'zero ground data — what an unmonitored city like Kandy gets today',
+    0: 'satellite level only — no sensor level-anchoring (the daily/hourly shape is still learned from the 2 anchors)',
     1: 'one arbitrary sensor is WORSE than none: an unrepresentative station drags the level',
     2: 'two sensors: placement matters more than count at this budget',
     18: 'the full training network — what monitoring investment buys',
